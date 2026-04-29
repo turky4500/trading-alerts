@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>لوحة تحكم التنبيهات</title>
+<style>
+body{font-family:Tahoma;background:#111;color:#fff;padding:20px}
+input,select,button{padding:10px;margin:5px;font-size:16px}
+button{background:#25D366;color:#000;border:none;cursor:pointer}
+.alert{background:#222;padding:10px;margin:10px 0;border-radius:8px}
+</style>
+</head>
+<body>
+<h1>🚀 بوت تنبيهات التداول</h1>
+
+<h3>إضافة تنبيه جديد</h3>
+<input id="symbol" placeholder="BTCUSDT" value="BTCUSDT">
+<select id="interval">
+  <option>1m</option><option>5m</option><option>15m</option>
+  <option selected>1h</option><option>4h</option><option>1d</option>
+</select>
+<button onclick="runBot()">تشغيل التنبيه</button>
+
+<h3>تنبيهاتي الشغالة</h3>
+<div id="activeList"></div>
+
+<script>
+const REPO = 'YOUR_USERNAME/trading-alerts'; // عدلها
+const PAT = 'YOUR_GITHUB_PAT'; // عدلها
+
+let alerts = JSON.parse(localStorage.getItem('alerts') || '[]');
+renderList();
+
+async function runBot() {
+  const symbol = document.getElementById('symbol').value.toUpperCase();
+  const interval = document.getElementById('interval').value;
+  
+  await fetch(`https://api.github.com/repos/${REPO}/dispatches`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `token ${PAT}`,
+      'Accept': 'application/vnd.github.v3+json'
+    },
+    body: JSON.stringify({
+      event_type: 'run_signal',
+      client_payload: {symbol, interval}
+    })
+  });
+  
+  if(!alerts.find(a => a.symbol===symbol && a.interval===interval)){
+    alerts.push({symbol, interval});
+    localStorage.setItem('alerts', JSON.stringify(alerts));
+    renderList();
+  }
+  alert(`تم تشغيل تنبيه ${symbol} ${interval}`);
+}
+
+function renderList(){
+  document.getElementById('activeList').innerHTML = alerts.map((a,i) => 
+    `<div class="alert">${a.symbol} - ${a.interval} 
+     <button onclick="removeAlert(${i})">حذف</button></div>`
+  ).join('');
+}
+
+function removeAlert(i){
+  alerts.splice(i,1);
+  localStorage.setItem('alerts', JSON.stringify(alerts));
+  renderList();
+}
+</script>
+</body>
+</html>
