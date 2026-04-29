@@ -2,8 +2,6 @@ name: Trading Alerts
 on:
   repository_dispatch:
     types: [run_signal]
-  workflow_dispatch:
-
 jobs:
   check:
     runs-on: ubuntu-latest
