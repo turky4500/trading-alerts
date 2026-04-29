@@ -3,15 +3,26 @@ import requests
 import pandas as pd
 from datetime import datetime
 
-# كل شي يجي من الصفحة مباشرة
-SYMBOL = os.environ.get("SYMBOL", "BTCUSDT")
-INTERVAL = os.environ.get("INTERVAL", "1h")
+SYMBOL = os.environ.get("SYMBOL")
+INTERVAL = os.environ.get("INTERVAL")
 WHATSAPP_TOKEN = os.environ.get("WHATSAPP_TOKEN")
 WHATSAPP_PHONE = os.environ.get("WHATSAPP_PHONE")
 WHATSAPP_API_URL = "https://whatsapp.tkwin.com.sa/api/v1/send"
 
 LENGTH = 20
 MULT = 2.0
+
+def send_whatsapp(message):
+    if not WHATSAPP_TOKEN or not WHATSAPP_PHONE:
+        print("Missing token or phone")
+        return
+    headers = {'Authorization': f'Bearer {WHATSAPP_TOKEN}', 'Content-Type': 'application/json'}
+    payload = {"to": WHATSAPP_PHONE, "message": message}
+    try:
+        r = requests.post(WHATSAPP_API_URL, headers=headers, json=payload, timeout=10)
+        print(f"WhatsApp: {r.status_code}")
+    except Exception as e:
+        print(f"Error: {e}")
 
 def get_binance_klines(symbol, interval, limit=100):
     url = f"https://api.binance.com/api/v3/klines?symbol={symbol}&interval={interval}&limit={limit}"
@@ -32,30 +43,21 @@ def calculate_signals(df):
     df['sell_signal'] = (df['close'].shift(1) > df['upper'].shift(1)) & (df['close'] < df['upper']) & df['high_vol']
     return df
 
-def send_whatsapp(message):
-    if not WHATSAPP_TOKEN or not WHATSAPP_PHONE:
-        print("Missing token or phone")
-        return
-    headers = {'Authorization': f'Bearer {WHATSAPP_TOKEN}', 'Content-Type': 'application/json'}
-    payload = {"to": WHATSAPP_PHONE, "message": message}
-    try:
-        r = requests.post(WHATSAPP_API_URL, headers=headers, json=payload, timeout=10)
-        print(f"WhatsApp: {r.status_code}")
-    except Exception as e:
-        print(f"Error: {e}")
-
 if __name__ == "__main__":
+    # 1. رسالة تأكيد التشغيل على الواتساب
+    start_msg = f"✅ تم تشغيل البوت بنجاح\nالعملة: {SYMBOL}\nالفريم: {INTERVAL}\nالوقت: {datetime.now().strftime('%H:%M')}\n\nانتظر الإشارة... بيوصلك تنبيه لو ظهرت إشارة بيع أو شراء"
+    send_whatsapp(start_msg)
+    
+    # 2. نشيك الإشارات
     df = get_binance_klines(SYMBOL, INTERVAL)
     df = calculate_signals(df)
     last = df.iloc[-1]
     
     if last['buy_signal']:
-        msg = f"🚀 BUY {SYMBOL}\nالسعر: {last['close']:.2f}\nالفريم: {INTERVAL}\n{datetime.now().strftime('%Y-%m-%d %H:%M')}"
-        send_whatsapp(msg)
-        print(msg)
+        signal_msg = f"🚀 BUY Signal {SYMBOL}\nالسعر: {last['close']:.2f}\nالفريم: {INTERVAL}\n{datetime.now().strftime('%Y-%m-%d %H:%M')}"
+        send_whatsapp(signal_msg)
     elif last['sell_signal']:
-        msg = f"🔻 SELL {SYMBOL}\nالسعر: {last['close']:.2f}\nالفريم: {INTERVAL}\n{datetime.now().strftime('%Y-%m-%d %H:%M')}"
-        send_whatsapp(msg)
-        print(msg)
+        signal_msg = f"🔻 SELL Signal {SYMBOL}\nالسعر: {last['close']:.2f}\nالفريم: {INTERVAL}\n{datetime.now().strftime('%Y-%m-%d %H:%M')}"
+        send_whatsapp(signal_msg)
     else:
         print(f"No signal {SYMBOL}-{INTERVAL}")
