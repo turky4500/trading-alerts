@@ -2,16 +2,20 @@ name: Trading Alerts
 on:
   repository_dispatch:
     types: [run_signal]
+  workflow_dispatch:
 jobs:
   check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
       - run: pip install requests pandas
-      - run: python signal_bot.py
+      - run: |
+          echo "Bot started for $SYMBOL $INTERVAL"
+          echo "Phone: $WHATSAPP_PHONE"
+          echo "Token exists: ${{ secrets.WHATSAPP_TOKEN != '' }}"
         env:
           SYMBOL: ${{ github.event.client_payload.symbol }}
           INTERVAL: ${{ github.event.client_payload.interval }}
