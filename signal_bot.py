@@ -3,14 +3,15 @@ import requests
 import pandas as pd
 from datetime import datetime
 
+# كل شي يجي من الصفحة مباشرة
 SYMBOL = os.environ.get("SYMBOL", "BTCUSDT")
 INTERVAL = os.environ.get("INTERVAL", "1h")
-LENGTH = 20
-MULT = 2.0
-
 WHATSAPP_TOKEN = os.environ.get("WHATSAPP_TOKEN")
 WHATSAPP_PHONE = os.environ.get("WHATSAPP_PHONE")
 WHATSAPP_API_URL = "https://whatsapp.tkwin.com.sa/api/v1/send"
+
+LENGTH = 20
+MULT = 2.0
 
 def get_binance_klines(symbol, interval, limit=100):
     url = f"https://api.binance.com/api/v3/klines?symbol={symbol}&interval={interval}&limit={limit}"
@@ -32,6 +33,9 @@ def calculate_signals(df):
     return df
 
 def send_whatsapp(message):
+    if not WHATSAPP_TOKEN or not WHATSAPP_PHONE:
+        print("Missing token or phone")
+        return
     headers = {'Authorization': f'Bearer {WHATSAPP_TOKEN}', 'Content-Type': 'application/json'}
     payload = {"to": WHATSAPP_PHONE, "message": message}
     try:
