@@ -21,14 +21,11 @@ button:disabled{background:#21262d;color:#484f58;cursor:not-allowed}
 .alert button:hover{background:#f85149}
 label{display:block;margin-top:16px;font-weight:600;font-size:14px}
 small{color:#8b949e;font-size:12px;display:block;margin-top:4px}
-.success{background:#0d5324;border:1px solid #238636;padding:16px;border-radius:8px;margin:16px 0;display:none}
 </style>
 </head>
 <body>
 <div class="container">
 <h1>🚀 بوت تنبيهات التداول</h1>
-
-<div id="successMsg" class="success"></div>
 
 <label>توكن الواتساب</label>
 <input id="token" type="password" autocomplete="off">
@@ -57,13 +54,12 @@ small{color:#8b949e;font-size:12px;display:block;margin-top:4px}
 </div>
 
 <script>
-const REPO = 'turky4/trading-alerts'; // عدله لاسم حسابك
-const PAT = 'YOUR_GITHUB_PAT'; // عدله
+const REPO = 'turky4/trading-alerts';
+const PAT = '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';
 
 let alerts = JSON.parse(localStorage.getItem('alerts') || '[]');
 renderList();
 
-// نعبي الخانات لو محفوظة
 document.getElementById('token').value = localStorage.getItem('token') || '';
 document.getElementById('phone').value = localStorage.getItem('phone') || '';
 
@@ -80,13 +76,13 @@ async function runBot() {
   }
   
   btn.disabled = true;
-  btn.textContent = 'جاري التشغيل...';
+  btn.textContent = 'جاري الإرسال...';
   
   localStorage.setItem('token', token);
   localStorage.setItem('phone', phone);
   
   try {
-    await fetch(`https://api.github.com/repos/${REPO}/dispatches`, {
+    const res = await fetch(`https://api.github.com/repos/${REPO}/dispatches`, {
       method: 'POST',
       headers: {
         'Authorization': `token ${PAT}`,
@@ -98,20 +94,15 @@ async function runBot() {
       })
     });
     
-    // رسالة تأكيد
-    const msg = document.getElementById('successMsg');
-    msg.innerHTML = `✅ تم تشغيل التنبيه بنجاح<br>
-    <b>العملة:</b> ${symbol}<br>
-    <b>الفريم:</b> ${interval}<br>
-    <b>الرقم:</b> ${phone}<br>
-    انتظر الإشارة... بيوصلك واتساب لو ظهرت إشارة بيع أو شراء`;
-    msg.style.display = 'block';
-    setTimeout(() => msg.style.display = 'none', 8000);
-    
-    if(!alerts.find(a => a.symbol===symbol && a.interval===interval)){
-      alerts.push({symbol, interval});
-      localStorage.setItem('alerts', JSON.stringify(alerts));
-      renderList();
+    if(res.ok){
+      alert('تم إرسال الأمر بنجاح. بتجيك رسالة واتساب خلال ثواني للتأكيد');
+      if(!alerts.find(a => a.symbol===symbol && a.interval===interval)){
+        alerts.push({symbol, interval});
+        localStorage.setItem('alerts', JSON.stringify(alerts));
+        renderList();
+      }
+    } else {
+      alert('فشل الإرسال. تأكد من توكن GitHub');
     }
   } catch(e) {
     alert('صار خطأ: ' + e.message);
