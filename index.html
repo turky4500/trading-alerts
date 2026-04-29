@@ -1,50 +1,74 @@
 <!DOCTYPE html>
-<html dir="rtl">
+<html dir="rtl" lang="ar">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>بوت تنبيهات التداول</title>
 <style>
-body{font-family:Tahoma;background:#0d1117;color:#fff;padding:20px;max-width:600px;margin:auto}
-input,select,button{padding:12px;margin:8px 0;width:100%;font-size:16px;border-radius:6px;border:1px solid #30363d;background:#161b22;color:#fff}
-button{background:#238636;color:#fff;border:none;cursor:pointer;font-weight:bold}
+*{box-sizing:border-box}
+body{font-family:system-ui,Tahoma;background:#0d1117;color:#e6edf3;padding:16px;margin:0;line-height:1.6}
+.container{max-width:500px;margin:0 auto}
+h1{font-size:24px;text-align:center;margin-bottom:24px}
+h3{font-size:18px;margin:24px 0 12px;color:#58a6ff}
+input,select,button{padding:14px;margin:8px 0;width:100%;font-size:16px;border-radius:8px;border:1px solid #30363d;background:#161b22;color:#e6edf3}
+input:focus,select:focus{outline:2px solid #58a6ff;border-color:#58a6ff}
+button{background:#238636;color:#fff;border:none;cursor:pointer;font-weight:600;margin-top:16px}
 button:hover{background:#2ea043}
-.alert{background:#161b22;padding:15px;margin:10px 0;border-radius:8px;border:1px solid #30363d}
-label{display:block;margin-top:15px;font-weight:bold}
-small{color:#8b949e}
+button:disabled{background:#21262d;color:#484f58;cursor:not-allowed}
+.alert{background:#161b22;padding:16px;margin:12px 0;border-radius:8px;border:1px solid #30363d;display:flex;justify-content:space-between;align-items:center}
+.alert-info{flex:1}
+.alert button{width:auto;padding:8px 16px;margin:0;background:#da3633}
+.alert button:hover{background:#f85149}
+label{display:block;margin-top:16px;font-weight:600;font-size:14px}
+small{color:#8b949e;font-size:12px;display:block;margin-top:4px}
+.success{background:#0d5324;border:1px solid #238636;padding:16px;border-radius:8px;margin:16px 0;display:none}
 </style>
 </head>
 <body>
+<div class="container">
 <h1>🚀 بوت تنبيهات التداول</h1>
 
-<label>توكن الواتساب WhatsApp Token</label>
-<input id="token" type="password" placeholder="7a203d6ba6f4325ed3261ea87f6b2e751250ad97">
+<div id="successMsg" class="success"></div>
+
+<label>توكن الواتساب</label>
+<input id="token" type="password" autocomplete="off">
 <small>من موقع whatsapp.tkwin.com.sa</small>
 
 <label>رقم الواتساب</label>
-<input id="phone" placeholder="966501234567">
+<input id="phone" type="tel" placeholder="966501234567" autocomplete="off">
 
 <label>العملة</label>
-<input id="symbol" placeholder="BTCUSDT" value="BTCUSDT">
+<input id="symbol" placeholder="BTCUSDT" value="BTCUSDT" autocomplete="off">
 
 <label>الفريم الزمني</label>
 <select id="interval">
-  <option>1m</option><option>5m</option><option>15m</option>
-  <option selected>1h</option><option>4h</option><option>1d</option>
+  <option value="1m">1 دقيقة</option>
+  <option value="5m">5 دقائق</option>
+  <option value="15m">15 دقيقة</option>
+  <option value="1h" selected>1 ساعة</option>
+  <option value="4h">4 ساعات</option>
+  <option value="1d">يوم</option>
 </select>
 
-<button onclick="runBot()">تشغيل التنبيه الآن</button>
+<button id="runBtn" onclick="runBot()">تشغيل التنبيه الآن</button>
 
 <h3>تنبيهاتك المحفوظة</h3>
 <div id="activeList"></div>
+</div>
 
 <script>
-const REPO = 'YOUR_USERNAME/trading-alerts'; // عدله لاسم حسابك
+const REPO = 'turky4/trading-alerts'; // عدله لاسم حسابك
 const PAT = 'YOUR_GITHUB_PAT'; // عدله
 
 let alerts = JSON.parse(localStorage.getItem('alerts') || '[]');
 renderList();
 
+// نعبي الخانات لو محفوظة
+document.getElementById('token').value = localStorage.getItem('token') || '';
+document.getElementById('phone').value = localStorage.getItem('phone') || '';
+
 async function runBot() {
+  const btn = document.getElementById('runBtn');
   const token = document.getElementById('token').value.trim();
   const phone = document.getElementById('phone').value.trim();
   const symbol = document.getElementById('symbol').value.toUpperCase().trim();
@@ -55,41 +79,56 @@ async function runBot() {
     return;
   }
   
-  // نحفظ التوكن والرقم بالمتصفح عشان ما يعيد كتابتهم
+  btn.disabled = true;
+  btn.textContent = 'جاري التشغيل...';
+  
   localStorage.setItem('token', token);
   localStorage.setItem('phone', phone);
   
-  await fetch(`https://api.github.com/repos/${REPO}/dispatches`, {
-    method: 'POST',
-    headers: {
-      'Authorization': `token ${PAT}`,
-      'Accept': 'application/vnd.github.v3+json'
-    },
-    body: JSON.stringify({
-      event_type: 'run_signal',
-      client_payload: {symbol, interval, token, phone}
-    })
-  });
-  
-  if(!alerts.find(a => a.symbol===symbol && a.interval===interval)){
-    alerts.push({symbol, interval});
-    localStorage.setItem('alerts', JSON.stringify(alerts));
-    renderList();
+  try {
+    await fetch(`https://api.github.com/repos/${REPO}/dispatches`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `token ${PAT}`,
+        'Accept': 'application/vnd.github.v3+json'
+      },
+      body: JSON.stringify({
+        event_type: 'run_signal',
+        client_payload: {symbol, interval, token, phone}
+      })
+    });
+    
+    // رسالة تأكيد
+    const msg = document.getElementById('successMsg');
+    msg.innerHTML = `✅ تم تشغيل التنبيه بنجاح<br>
+    <b>العملة:</b> ${symbol}<br>
+    <b>الفريم:</b> ${interval}<br>
+    <b>الرقم:</b> ${phone}<br>
+    انتظر الإشارة... بيوصلك واتساب لو ظهرت إشارة بيع أو شراء`;
+    msg.style.display = 'block';
+    setTimeout(() => msg.style.display = 'none', 8000);
+    
+    if(!alerts.find(a => a.symbol===symbol && a.interval===interval)){
+      alerts.push({symbol, interval});
+      localStorage.setItem('alerts', JSON.stringify(alerts));
+      renderList();
+    }
+  } catch(e) {
+    alert('صار خطأ: ' + e.message);
   }
-  alert(`تم إرسال الأمر. بيجيك واتساب لو فيه إشارة ${symbol}`);
+  
+  btn.disabled = false;
+  btn.textContent = 'تشغيل التنبيه الآن';
 }
 
-// نعبي الخانات لو كانت محفوظة
-document.getElementById('token').value = localStorage.getItem('token') || '';
-document.getElementById('phone').value = localStorage.getItem('phone') || '';
-
 function renderList(){
-  document.getElementById('activeList').innerHTML = alerts.map((a,i) => 
+  const list = document.getElementById('activeList');
+  list.innerHTML = alerts.map((a,i) => 
     `<div class="alert">
-      <b>${a.symbol}</b> - ${a.interval} 
-      <button style="width:auto;float:left" onclick="removeAlert(${i})">حذف</button>
+      <div class="alert-info"><b>${a.symbol}</b> - ${a.interval}</div>
+      <button onclick="removeAlert(${i})">حذف</button>
     </div>`
-  ).join('') || '<small>ما فيه تنبيهات محفوظة</small>';
+  ).join('') || '<small>ما فيه تنبيهات محفوظة. شغل أول تنبيه فوق</small>';
 }
 
 function removeAlert(i){
