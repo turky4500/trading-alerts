@@ -55,7 +55,7 @@ small{color:#8b949e;font-size:12px;display:block;margin-top:4px}
 
 <script>
 const REPO = 'turky4500/trading-alerts';
-const PAT = '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';
+const PAT = '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';
 
 let alerts = JSON.parse(localStorage.getItem('alerts') || '[]');
 renderList();
@@ -85,49 +85,6 @@ async function runBot() {
     const res = await fetch(`https://api.github.com/repos/${REPO}/dispatches`, {
       method: 'POST',
       headers: {
-        'Authorization': `token ${PAT}`,
-        'Accept': 'application/vnd.github.v3+json'
-      },
-      body: JSON.stringify({
-        event_type: 'run_signal',
-        client_payload: {symbol, interval, token, phone}
-      })
-    });
-    
-    if(res.ok){
-      alert('تم إرسال الأمر بنجاح. بتجيك رسالة واتساب خلال ثواني للتأكيد');
-      if(!alerts.find(a => a.symbol===symbol && a.interval===interval)){
-        alerts.push({symbol, interval});
-        localStorage.setItem('alerts', JSON.stringify(alerts));
-        renderList();
-      }
-    } else {
-      const errorData = await res.json();
-      alert('فشل الإرسال: ' + (errorData.message || 'تأكد من توكن GitHub'));
-    }
-  } catch(e) {
-    alert('صار خطأ: ' + e.message);
-  }
-  
-  btn.disabled = false;
-  btn.textContent = 'تشغيل التنبيه الآن';
-}
-
-function renderList(){
-  const list = document.getElementById('activeList');
-  list.innerHTML = alerts.map((a,i) => 
-    `<div class="alert">
-      <div class="alert-info"><b>${a.symbol}</b> - ${a.interval}</div>
-      <button onclick="removeAlert(${i})">حذف</button>
-    </div>`
-  ).join('') || '<small>ما فيه تنبيهات محفوظة. شغل أول تنبيه فوق</small>';
-}
-
-function removeAlert(i){
-  alerts.splice(i,1);
-  localStorage.setItem('alerts', JSON.stringify(alerts));
-  renderList();
-}
-</script>
-</body>
-</html>
+        'Authorization': `Bearer ${PAT}`,
+        'Accept': 'application/vnd.github.v3+json',
+        'X
