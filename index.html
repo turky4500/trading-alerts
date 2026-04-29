@@ -54,7 +54,7 @@ small{color:#8b949e;font-size:12px;display:block;margin-top:4px}
 </div>
 
 <script>
-const REPO = 'turky4/trading-alerts';
+const REPO = 'turky4500/trading-alerts';
 const PAT = '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';
 
 let alerts = JSON.parse(localStorage.getItem('alerts') || '[]');
@@ -102,7 +102,8 @@ async function runBot() {
         renderList();
       }
     } else {
-      alert('فشل الإرسال. تأكد من توكن GitHub');
+      const errorData = await res.json();
+      alert('فشل الإرسال: ' + (errorData.message || 'تأكد من توكن GitHub'));
     }
   } catch(e) {
     alert('صار خطأ: ' + e.message);
