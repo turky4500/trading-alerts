@@ -1,0 +1,23 @@
+name: Trading Alerts
+on:
+  repository_dispatch:
+    types: [run_signal]
+  schedule:
+    - cron: '*/5 * * * *'  # يشتغل كل 5 دقايق تلقائي
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      - run: pip install requests pandas
+      - run: python signal_bot.py
+        env:
+          SYMBOL: ${{ github.event.client_payload.symbol || 'BTCUSDT' }}
+          INTERVAL: ${{ github.event.client_payload.interval || '1h' }}
+          WHATSAPP_TOKEN: ${{ secrets.WHATSAPP_TOKEN }}
+          WHATSAPP_PHONE: ${{ secrets.WHATSAPP_PHONE }}
