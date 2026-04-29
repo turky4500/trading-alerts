@@ -21,6 +21,7 @@ button:disabled{background:#21262d;color:#484f58;cursor:not-allowed}
 .alert button:hover{background:#f85149}
 label{display:block;margin-top:16px;font-weight:600;font-size:14px}
 small{color:#8b949e;font-size:12px;display:block;margin-top:4px}
+#error{color:#f85149;margin-top:12px;white-space:pre-wrap;direction:ltr;text-align:left}
 </style>
 </head>
 <body>
@@ -48,6 +49,7 @@ small{color:#8b949e;font-size:12px;display:block;margin-top:4px}
 </select>
 
 <button id="runBtn" onclick="runBot()">تشغيل التنبيه الآن</button>
+<div id="error"></div>
 
 <h3>تنبيهاتك المحفوظة</h3>
 <div id="activeList"></div>
@@ -65,10 +67,13 @@ document.getElementById('phone').value = localStorage.getItem('phone') || '';
 
 async function runBot() {
   const btn = document.getElementById('runBtn');
+  const errorDiv = document.getElementById('error');
   const token = document.getElementById('token').value.trim();
   const phone = document.getElementById('phone').value.trim();
   const symbol = document.getElementById('symbol').value.toUpperCase().trim();
   const interval = document.getElementById('interval').value;
+  
+  errorDiv.textContent = '';
   
   if(!token || !phone || !symbol){
     alert('عبي كل الخانات المطلوبة');
@@ -82,9 +87,60 @@ async function runBot() {
   localStorage.setItem('phone', phone);
   
   try {
+    console.log('Sending to:', `https://api.github.com/repos/${REPO}/dispatches`);
     const res = await fetch(`https://api.github.com/repos/${REPO}/dispatches`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${PAT}`,
         'Accept': 'application/vnd.github.v3+json',
-        'X
+        'X-GitHub-Api-Version': '2022-11-28'
+      },
+      body: JSON.stringify({
+        event_type: 'run_signal',
+        client_payload: {symbol, interval, token, phone}
+      })
+    });
+    
+    console.log('Response status:', res.status);
+    
+    if(res.status === 204){
+      alert('تم إرسال الأمر بنجاح. بتجيك رسالة واتساب خلال 30 ثانية');
+      if(!alerts.find(a => a.symbol===symbol && a.interval===interval)){
+        alerts.push({symbol, interval});
+        localStorage.setItem('alerts', JSON.stringify(alerts));
+        renderList();
+      }
+    } else {
+      const errorData = await res.text();
+      console.log('Error:', errorData);
+      errorDiv.textContent = `خطأ ${res.status}: ${errorData}`;
+      alert('فشل الإرسال. شوف الخطأ الأحمر تحت الزر');
+    }
+  } catch(e) {
+    console.log('Exception:', e);
+    errorDiv.textContent = 'Exception: ' + e.message;
+    alert('صار خطأ: ' + e.message);
+  }
+  
+  btn.disabled = false;
+  btn.textContent = 'تشغيل التنبيه الآن';
+}
+
+function renderList(){
+  const list = document.getElementById('activeList');
+  list.innerHTML = alerts.map((a,i) => 
+    `<div class="alert">
+      <div class="alert-info"><b>${a.symbol}</b> - ${a.interval}</div>
+      <button onclick="removeAlert(${i})">حذف</button>
+    </div>`
+  ).join('') || '<small>ما فيه تنبيهات محفوظة. شغل أول تنبيه فوق</small>';
+}
+
+function removeAlert(i){
+  alerts.splice(i,1);
+  localStorage.setItem('alerts', JSON.stringify(alerts));
+  renderList();
+}
+</script>
+</body>
+</html>
