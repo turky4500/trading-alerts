@@ -2,38 +2,62 @@
 <html dir="rtl">
 <head>
 <meta charset="UTF-8">
-<title>لوحة تحكم التنبيهات</title>
+<title>بوت تنبيهات التداول</title>
 <style>
-body{font-family:Tahoma;background:#111;color:#fff;padding:20px}
-input,select,button{padding:10px;margin:5px;font-size:16px}
-button{background:#25D366;color:#000;border:none;cursor:pointer}
-.alert{background:#222;padding:10px;margin:10px 0;border-radius:8px}
+body{font-family:Tahoma;background:#0d1117;color:#fff;padding:20px;max-width:600px;margin:auto}
+input,select,button{padding:12px;margin:8px 0;width:100%;font-size:16px;border-radius:6px;border:1px solid #30363d;background:#161b22;color:#fff}
+button{background:#238636;color:#fff;border:none;cursor:pointer;font-weight:bold}
+button:hover{background:#2ea043}
+.alert{background:#161b22;padding:15px;margin:10px 0;border-radius:8px;border:1px solid #30363d}
+label{display:block;margin-top:15px;font-weight:bold}
+small{color:#8b949e}
 </style>
 </head>
 <body>
 <h1>🚀 بوت تنبيهات التداول</h1>
 
-<h3>إضافة تنبيه جديد</h3>
+<label>توكن الواتساب WhatsApp Token</label>
+<input id="token" type="password" placeholder="7a203d6ba6f4325ed3261ea87f6b2e751250ad97">
+<small>من موقع whatsapp.tkwin.com.sa</small>
+
+<label>رقم الواتساب</label>
+<input id="phone" placeholder="966501234567">
+
+<label>العملة</label>
 <input id="symbol" placeholder="BTCUSDT" value="BTCUSDT">
+
+<label>الفريم الزمني</label>
 <select id="interval">
   <option>1m</option><option>5m</option><option>15m</option>
   <option selected>1h</option><option>4h</option><option>1d</option>
 </select>
-<button onclick="runBot()">تشغيل التنبيه</button>
 
-<h3>تنبيهاتي الشغالة</h3>
+<button onclick="runBot()">تشغيل التنبيه الآن</button>
+
+<h3>تنبيهاتك المحفوظة</h3>
 <div id="activeList"></div>
 
 <script>
-const REPO = 'YOUR_USERNAME/trading-alerts'; // عدلها
-const PAT = 'YOUR_GITHUB_PAT'; // عدلها
+const REPO = 'YOUR_USERNAME/trading-alerts'; // عدله لاسم حسابك
+const PAT = 'YOUR_GITHUB_PAT'; // عدله
 
 let alerts = JSON.parse(localStorage.getItem('alerts') || '[]');
 renderList();
 
 async function runBot() {
-  const symbol = document.getElementById('symbol').value.toUpperCase();
+  const token = document.getElementById('token').value.trim();
+  const phone = document.getElementById('phone').value.trim();
+  const symbol = document.getElementById('symbol').value.toUpperCase().trim();
   const interval = document.getElementById('interval').value;
+  
+  if(!token || !phone || !symbol){
+    alert('عبي كل الخانات المطلوبة');
+    return;
+  }
+  
+  // نحفظ التوكن والرقم بالمتصفح عشان ما يعيد كتابتهم
+  localStorage.setItem('token', token);
+  localStorage.setItem('phone', phone);
   
   await fetch(`https://api.github.com/repos/${REPO}/dispatches`, {
     method: 'POST',
@@ -43,7 +67,7 @@ async function runBot() {
     },
     body: JSON.stringify({
       event_type: 'run_signal',
-      client_payload: {symbol, interval}
+      client_payload: {symbol, interval, token, phone}
     })
   });
   
@@ -52,14 +76,20 @@ async function runBot() {
     localStorage.setItem('alerts', JSON.stringify(alerts));
     renderList();
   }
-  alert(`تم تشغيل تنبيه ${symbol} ${interval}`);
+  alert(`تم إرسال الأمر. بيجيك واتساب لو فيه إشارة ${symbol}`);
 }
+
+// نعبي الخانات لو كانت محفوظة
+document.getElementById('token').value = localStorage.getItem('token') || '';
+document.getElementById('phone').value = localStorage.getItem('phone') || '';
 
 function renderList(){
   document.getElementById('activeList').innerHTML = alerts.map((a,i) => 
-    `<div class="alert">${a.symbol} - ${a.interval} 
-     <button onclick="removeAlert(${i})">حذف</button></div>`
-  ).join('');
+    `<div class="alert">
+      <b>${a.symbol}</b> - ${a.interval} 
+      <button style="width:auto;float:left" onclick="removeAlert(${i})">حذف</button>
+    </div>`
+  ).join('') || '<small>ما فيه تنبيهات محفوظة</small>';
 }
 
 function removeAlert(i){
